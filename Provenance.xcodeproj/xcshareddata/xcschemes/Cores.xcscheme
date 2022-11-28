@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "B3270F7E27DCB25100E83180"
-               BuildableName = "Cores_iOS.framework"
-               BlueprintName = "Cores-iOS"
+               BuildableName = "Cores.framework"
+               BlueprintName = "Cores"
                ReferencedContainer = "container:Provenance.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -31,7 +31,7 @@
       </Testables>
    </TestAction>
    <LaunchAction
-      buildConfiguration = "Debug"
+      buildConfiguration = "Release"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
@@ -51,8 +51,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "B3270F7E27DCB25100E83180"
-            BuildableName = "Cores_iOS.framework"
-            BlueprintName = "Cores-iOS"
+            BuildableName = "Cores.framework"
+            BlueprintName = "Cores"
             ReferencedContainer = "container:Provenance.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

@@ -11,7 +11,7 @@
 #import "Provenance-Swift.h"
 #import <QuartzCore/QuartzCore.h>
 
-#if !TARGET_OS_MACCATALYST
+#if !TARGET_OS_MACCATALYST && !TARGET_OS_OSX
 #import <OpenGLES/gltypes.h>
 #import <OpenGLES/ES3/gl.h>
 #import <OpenGLES/ES3/glext.h>
@@ -20,12 +20,21 @@
 @import OpenGL;
 @import AppKit;
 @import GLUT;
+@import CoreImage;
+@import OpenGL.IOSurface;
+@import OpenGL.GL3;
+//#import <OpenGL/CGLIOSurface.h>
+@import OpenGL.OpenGLAvailability;
+@import OpenGL.GL;
+@import CoreVideo;
 #endif
 
 // Add SPI https://developer.apple.com/documentation/opengles/eaglcontext/2890259-teximageiosurface?language=objc
+#if !TARGET_OS_MACCATALYST && !TARGET_OS_OSX
 @interface EAGLContext()
 - (BOOL)texImageIOSurface:(IOSurfaceRef)ioSurface target:(NSUInteger)target internalFormat:(NSUInteger)internalFormat width:(uint32_t)width height:(uint32_t)height format:(NSUInteger)format type:(NSUInteger)type plane:(uint32_t)plane;
 @end
+#endif
 
 #define BUFFER_COUNT 3
 
@@ -59,9 +68,16 @@
 @property (nonatomic, strong) id<MTLTexture> inputTexture;
 @property (nonatomic, strong) id<MTLCommandBuffer> previousCommandBuffer; // used for scheduling with OpenGL context
 
+#if !TARGET_OS_MACCATALYST && !TARGET_OS_OSX
 @property (nonatomic, strong) EAGLContext *glContext;
 @property (nonatomic, strong) EAGLContext *alternateThreadGLContext;
 @property (nonatomic, strong) EAGLContext *alternateThreadBufferCopyGLContext;
+#else
+//@property (nonatomic, strong) NSOpenGLContext *glContext;
+//@property (nonatomic, strong) NSOpenGLContext *alternateThreadGLContext;
+//@property (nonatomic, strong) NSOpenGLContext *alternateThreadBufferCopyGLContext;
+//@property (nonatomic, strong) CADisplayLink *caDisplayLink;
+#endif
 
 @property (nonatomic, assign) GLESVersion glesVersion;
 
@@ -155,6 +171,7 @@ PV_OBJC_DIRECT_MEMBERS
 
     if (self.emulatorCore.rendersToOpenGL)
     {
+#if !TARGET_OS_MACCATALYST && !TARGET_OS_OSX
         self.glContext = [self bestContext];
 
         ILOG(@"Initiated GLES version %lu", (unsigned long)self.glContext.API);
@@ -164,6 +181,8 @@ PV_OBJC_DIRECT_MEMBERS
         self.glContext.multiThreaded = PVSettingsModel.shared.debugOptions.multiThreadedGL;
 
         [EAGLContext setCurrentContext:self.glContext];
+#else
+#endif
     }
 
     _frameCount = 0;
@@ -186,9 +205,12 @@ PV_OBJC_DIRECT_MEMBERS
     view.enableSetNeedsDisplay = NO;
 
      // Setup display link.
-//     CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
-//     CVDisplayLinkSetOutputCallback(displayLink, &MyDisplayLinkCallback, (__bridge void*)self);
-//     CVDisplayLinkStart(displayLink);
+//    self.caDisplayLink = [UIScreen.mainScreen displayLinkWithTarget:self selector::@selector(displayLinkCalled:)];
+//    _caDisplayLink.preferredFramesPerSecond = 120;
+//
+//     CVDisplayLinkCreateWithActiveCGDisplays(&_caDisplayLink);
+//     CVDisplayLinkSetOutputCallback(_caDisplayLink, &MyDisplayLinkCallback, (__bridge void*)self);
+//     CVDisplayLinkStart(_caDisplayLink);
 
     view.opaque = YES;
     view.layer.opaque = YES;
@@ -198,14 +220,7 @@ PV_OBJC_DIRECT_MEMBERS
     GLenum depthFormat = self.emulatorCore.depthFormat;
     switch (depthFormat) {
         case GL_DEPTH_COMPONENT16:
-            if (@available(macOS 10.12, iOS 13.0, *))
-            {
-                view.depthStencilPixelFormat = MTLPixelFormatDepth16Unorm;
-            }
-            else
-            {
-                view.depthStencilPixelFormat = MTLPixelFormatDepth32Float;
-            }
+            view.depthStencilPixelFormat = MTLPixelFormatDepth16Unorm;
             break;
         case GL_DEPTH_COMPONENT24:
             view.depthStencilPixelFormat = MTLPixelFormatX32_Stencil8; // fallback to D32 if D24 isn't supported
@@ -249,6 +264,7 @@ PV_OBJC_DIRECT_MEMBERS
     alternateThreadDepthRenderbuffer = 0;
 }
 
+#if !TARGET_OS_MACCATALYST && !TARGET_OS_OSX
 -(EAGLContext*)bestContext {
     EAGLContext* context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
     self.glesVersion = GLESVersion3;
@@ -264,6 +280,7 @@ PV_OBJC_DIRECT_MEMBERS
 
     return context;
 }
+#endif
 
 - (void) updatePreferredFPS {
     float preferredFPS = self.emulatorCore.frameInterval;
@@ -273,7 +290,12 @@ PV_OBJC_DIRECT_MEMBERS
         preferredFPS = 60;
     }
     self.mtlview.preferredFramesPerSecond = preferredFPS;
+    
+#if !TARGET_OS_MACCATALYST && !TARGET_OS_OSX
     [self setPreferredFramesPerSecond:preferredFPS];
+#else
+    [self setFramesPerSecond:preferredFPS];
+#endif
 }
 
 - (void)viewDidLayoutSubviews
@@ -450,7 +472,11 @@ PV_OBJC_DIRECT_MEMBERS
                 default:
                     return 4 * typeWidth;
             }
+#if !TARGET_OS_MACCATALYST && !TARGET_OS_OSX
         case GL_RGB565:
+#else
+        case GL_UNSIGNED_SHORT_5_6_5:
+#endif
         case GL_RGB:
             switch (pixelType) {
                 case GL_UNSIGNED_BYTE:
@@ -533,7 +559,11 @@ PV_OBJC_DIRECT_MEMBERS
             return MTLPixelFormatRGBA32Uint;
         }
     }
+#if !TARGET_OS_MACCATALYST && !TARGET_OS_OSX
     else if (pixelFormat == GL_RGB565)
+#else
+    else if (pixelFormat == GL_UNSIGNED_SHORT_5_6_5)
+#endif
     {
         return MTLPixelFormatRGBA16Unorm;
     }
@@ -676,7 +706,7 @@ PV_OBJC_DIRECT_MEMBERS
     void (^renderBlock)(void) = ^()
     {
         MAKESTRONG_RETURN_IF_NIL(self);
-        PVMetalViewController *self = strongself;
+//        PVMetalViewController *self = strongself;
         
         id<MTLTexture> outputTex = view.currentDrawable.texture;
         
@@ -754,7 +784,10 @@ PV_OBJC_DIRECT_MEMBERS
         
         id<MTLRenderCommandEncoder> encoder = [commandBuffer renderCommandEncoderWithDescriptor:desc];
         
-        if (strongself->renderSettings.crtFilterEnabled) {
+        if (strongself->renderSettings.lcdFilterEnabled && [strongself->_emulatorCore.screenType.lowercaseString containsString:@"lcd"] ) {
+            
+        }
+        else if (strongself->renderSettings.crtFilterEnabled && [strongself->_emulatorCore.screenType.lowercaseString containsString:@"crt"] ) {
             if ( [strongself->_effectFilterShader.name isEqualToString:@"CRT"]) {
                 struct CRT_Data cbData;
                 cbData.DisplayRect.x = 0;
@@ -860,8 +893,13 @@ PV_OBJC_DIRECT_MEMBERS
                 glUseProgram(strongself->program);
                 
                 GLuint vao;
+//#if !TARGET_OS_OSX
                 glGenVertexArrays(1, &vao);
                 glBindVertexArray(vao);
+//#else  //Not needed because of @import OpenGL.GL3 ?
+//                glGenVertexArraysAPPLE(1, &vao);
+//                glBindVertexArrayAPPLE(vao);
+//#endif
                 
                 GLuint vbo;
                 glGenBuffers(1, &vbo);
@@ -874,7 +912,6 @@ PV_OBJC_DIRECT_MEMBERS
                     +1.f, -1.f, 0, 1,
                     +1.f, +1.f, 0, 1,
                 };
-                
                 
                 glBindBuffer(GL_ARRAY_BUFFER, vbo);
                 glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
@@ -962,10 +999,17 @@ PV_OBJC_DIRECT_MEMBERS
 - (void)startRenderingOnAlternateThread
 {
     self.emulatorCore.glesVersion = self.glesVersion;
+
+//#if TARGET_OS_MACCATALYST || TARGET_OS_OSX
+//    return;
+//#endif
+
+#if !TARGET_OS_MACCATALYST && !TARGET_OS_OSX
     self.alternateThreadBufferCopyGLContext = [[EAGLContext alloc] initWithAPI:[self.glContext API] sharegroup:[self.glContext sharegroup]];
         
     self.alternateThreadGLContext = [[EAGLContext alloc] initWithAPI:[self.glContext API] sharegroup:[self.glContext sharegroup]];
     [EAGLContext setCurrentContext:self.alternateThreadGLContext];
+#endif
     
     // Setup framebuffer
     if (alternateThreadFramebufferBack == 0)
@@ -994,6 +1038,7 @@ PV_OBJC_DIRECT_MEMBERS
         glGenTextures(1, &alternateThreadColorTextureBack);
         glBindTexture(GL_TEXTURE_2D, alternateThreadColorTextureBack);
         // use CGLTexImageIOSurface2D instead of texImageIOSurface for macOS
+#if !TARGET_OS_MACCATALYST && !TARGET_OS_OSX
         [[EAGLContext currentContext] texImageIOSurface:backingIOSurface
                                    target:GL_TEXTURE_2D
                            internalFormat:GL_RGBA
@@ -1002,6 +1047,12 @@ PV_OBJC_DIRECT_MEMBERS
                                    format:GL_RGBA
                                      type:GL_UNSIGNED_BYTE
                                     plane:0];
+#else
+        // TODO: This?
+//        [CAOpenGLLayer layer];
+//        CGLPixelFormatObj *pf;
+//        CGLTexImageIOSurface2D(self.mEAGLContext, GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, backingIOSurface, 0);
+#endif
         glBindTexture(GL_TEXTURE_2D, 0);
         
 

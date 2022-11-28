@@ -6,8 +6,15 @@
 //  Copyright © 2022 Provenance Emu. All rights reserved.
 //
 
+#if TARGET_OS_OSX
+@import SwiftUI;
+@import AppKit;
+#elif TARGET_OS_MACCATALYST
 @import UIKit;
-
+#else
+@import UIKit;
+@import GLKit;
+#endif
 NS_ASSUME_NONNULL_BEGIN
 
 struct float2{ float x; float y; };
@@ -44,10 +51,13 @@ struct PVVertex
 
 typedef struct RenderSettings {
     BOOL crtFilterEnabled;
+    BOOL lcdFilterEnabled;
     BOOL smoothingEnabled;
 } RenderSettings;
 
-#if TARGET_OS_OSX || TARGET_OS_MACCATALYST
+#if TARGET_OS_OSX
+#define BaseViewController NSViewController
+#elif TARGET_OS_MACCATALYST
 #define BaseViewController UIViewController
 #else
 @import GLKit;
@@ -56,6 +66,8 @@ typedef struct RenderSettings {
 @class PVEmulatorCore;
 
 @interface PVGPUViewController : BaseViewController
+
+@property (nonatomic, retain, nullable) NSString *screenType;
 
 #if TARGET_OS_OSX || TARGET_OS_MACCATALYST
 @property (nonatomic, assign) BOOL isPaused;

@@ -47,7 +47,7 @@ public struct SystemDictionaryKeys {
     }
 }
 
-public enum SystemIdentifier: String, CaseIterable {
+public enum SystemIdentifier: String, CaseIterable, Codable {
     case _3DO = "com.provenance.3DO"
     case _3DS = "com.provenance.3ds"
     case Atari2600 = "com.provenance.2600"
@@ -290,17 +290,24 @@ public final class PVEmulatorConfiguration: NSObject {
         }
     }
 
-    static var iCloudContainerDirectoryCached: URL?
+    static var iCloudContainerDirectoryCached: URL? = {
+        if Thread.isMainThread {
+            var container: URL?
+            DispatchQueue.global(qos: .background).sync {
+                container = FileManager.default.url(forUbiquityContainerIdentifier: Constants.iCloud.containerIdentifier)
+            }
+            return container
+        } else {
+            let container = FileManager.default.url(forUbiquityContainerIdentifier: Constants.iCloud.containerIdentifier)
+            return container
+        }
+    }()
+    
     /// This should be called on a background thread
     static var iCloudContainerDirectory: URL? {
-        guard iCloudContainerDirectoryCached == nil else {
+        get {
             return iCloudContainerDirectoryCached
         }
-        if Thread.isMainThread {
-            WLOG("Warning, this should only be called on background threads.")
-        }
-        iCloudContainerDirectoryCached = FileManager.default.url(forUbiquityContainerIdentifier: Constants.iCloud.containerIdentifier)
-        return iCloudContainerDirectoryCached
     }
 
     /// This should be called on a background thread

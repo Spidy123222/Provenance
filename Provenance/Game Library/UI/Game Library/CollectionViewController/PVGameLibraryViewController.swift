@@ -188,8 +188,8 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
         NotificationCenter.default.addObserver(self, selector: #selector(PVGameLibraryViewController.handleAppDidBecomeActive(_:)), name: UIApplication.didBecomeActiveNotification, object: nil)
 
         #if os(iOS)
+            navigationController?.navigationBar.backgroundColor = Theme.currentTheme.navigationBarBackgroundColor
             navigationController?.navigationBar.tintColor = Theme.currentTheme.barButtonItemTint
-            navigationItem.leftBarButtonItem?.tintColor = Theme.currentTheme.barButtonItemTint
 
             NotificationCenter.default.addObserver(forName: NSNotification.Name.PVInterfaceDidChangeNotification, object: nil, queue: nil, using: { (_: Notification) -> Void in
                 DispatchQueue.main.async {
@@ -201,15 +201,14 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
             navigationController?.navigationBar.isTranslucent = false
             let blurEffect = UIBlurEffect(style: UIBlurEffect.Style.dark)
             let blurEffectView = UIVisualEffectView(effect: blurEffect)
-            blurEffectView.frame = (self.navigationController?.navigationBar.bounds)!
+            let bounds = (self.navigationController?.navigationBar.bounds)!
+            blurEffectView.frame = CGRect(x: bounds.minX, y: bounds.minY, width: bounds.width, height: bounds.height + 20)
             self.navigationController?.navigationBar.addSubview(blurEffectView)
             self.navigationController?.navigationBar.sendSubviewToBack(blurEffectView)
             navigationController?.navigationBar.backgroundColor = UIColor.black.withAlphaComponent(0.5)
             // ironicaly BarButtonItems (unselected background) look better when forced to LightMode
-            if #available(tvOS 13.0, *) {
-                navigationController?.overrideUserInterfaceStyle = .light
-                self.overrideUserInterfaceStyle = .dark
-            }
+            navigationController?.overrideUserInterfaceStyle = .light
+            self.overrideUserInterfaceStyle = .dark
         #endif
 
         // Handle migrating library
@@ -228,9 +227,7 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
             searchController.searchBar.placeholder = "Search"
             searchController.obscuresBackgroundDuringPresentation = false
             searchController.hidesNavigationBarDuringPresentation = false
-            if #available(iOS 13.0, *) {
-                searchController.automaticallyShowsCancelButton = true
-            }
+            searchController.automaticallyShowsCancelButton = true
             navigationItem.hidesSearchBarWhenScrolling = true
             navigationItem.searchController = searchController
 
@@ -249,6 +246,10 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
             let font = UIFont.boldSystemFont(ofSize: 48)
             let icon = "pv_dark_logo"
             let icon_size = font.capHeight
+
+            if let bbi = settingsBarButtonItem {
+                bbi.image = UIImage(systemName:"gear", withConfiguration:UIImage.SymbolConfiguration(font:font))
+            }
         #endif
         if let icon = UIImage(named:icon)?.resize(to:CGSize(width:0, height:icon_size))
         {
@@ -264,13 +265,6 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
             stack.alignment = .center
             stack.frame = CGRect(origin:.zero, size:stack.systemLayoutSizeFitting(.zero))
             navigationItem.titleView = stack
-        }
-
-        // we cant use a SF Symbol in the Storyboard cuz of back version support, so change it here in code.
-        if #available(iOS 13.0, tvOS 13.0, *) {
-            if let bbi = settingsBarButtonItem {
-                bbi.image = UIImage(systemName:"gear", withConfiguration:UIImage.SymbolConfiguration(font:font))
-            }
         }
 
         // Persist some settings, could probably be done in a better way
@@ -470,8 +464,6 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
             collectionView.clipsToBounds = false
             collectionView.backgroundColor = .black
         #else
-            collectionView.backgroundColor = Theme.currentTheme.gameLibraryBackground
-
             let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(PVGameLibraryViewController.didReceivePinchGesture(gesture:)))
             pinchGesture.cancelsTouchesInView = true
             collectionView.addGestureRecognizer(pinchGesture)
@@ -493,17 +485,24 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
         // Adjust collection view layout for iPhone X Safe areas
         // Can remove this when we go iOS 9+ and just use safe areas
         // in the story board directly - jm
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+        let guide = view.safeAreaLayoutGuide
         #if os(iOS)
-            collectionView.translatesAutoresizingMaskIntoConstraints = false
-            let guide = view.safeAreaLayoutGuide
             NSLayoutConstraint.activate([
                 collectionView.trailingAnchor.constraint(equalTo: guide.trailingAnchor),
                 collectionView.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
                 collectionView.topAnchor.constraint(equalTo: view.topAnchor),
                 collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
             ])
-            layout.sectionInsetReference = .fromSafeArea
+        #else
+            NSLayoutConstraint.activate([
+                collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                collectionView.topAnchor.constraint(equalTo: guide.topAnchor, constant: 20),
+                collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
         #endif
+        
         // Force touch
         #if os(iOS)
             registerForPreviewing(with: self, sourceView: collectionView)
@@ -511,6 +510,7 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
 
         #if os(iOS)
             view.bringSubviewToFront(libraryInfoContainerView)
+            layout.sectionInsetReference = .fromSafeArea
         #endif
 
         let hud = MBProgressHUD(view: view)!
@@ -619,10 +619,6 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
         indexPaths?.forEach({ indexPath in
             (self.collectionView?.deselectItem(at: indexPath, animated: true))!
         })
-
-        guard RomDatabase.databaseInitilized else {
-            return
-        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -866,6 +862,7 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
                 let alert = UIAlertController(title: "Unable to start web server!", message: "Your device needs to be connected to a network to continue!", preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { (_: UIAlertAction) -> Void in
                 }))
+                WLOG("No WiFi. Cannot start web server.")
                 present(alert, animated: true) { () -> Void in }
             } else {
                 startWebServer()
@@ -879,7 +876,7 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
             // show alert view
             showServerActiveAlert()
         } else {
-			#if targetEnvironment(simulator) || targetEnvironment(macCatalyst)
+			#if targetEnvironment(simulator) || targetEnvironment(macCatalyst) || os(macOS)
 			let message = "Check your network connection or settings and free up ports: 8080, 8081."
 			#else
 			let message = "Check your network connection or settings and free up ports: 80, 81."
@@ -978,7 +975,6 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
     }
 
     #if os(iOS)
-    @available(iOS 13.0, *)
     func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         guard useModernContextMenus,
               let cell = collectionView.cellForItem(at: indexPath),
@@ -1368,11 +1364,7 @@ final class PVGameLibraryViewController: GCEventViewController, UITextFieldDeleg
     #endif
 
     func collectionView(_: UICollectionView, layout _: UICollectionViewLayout, referenceSizeForHeaderInSection _: Int) -> CGSize {
-        #if os(tvOS)
-            return CGSize(width: view.bounds.size.width, height: 40)
-        #else
-            return CGSize(width: view.bounds.size.width, height: 40)
-        #endif
+        return CGSize(width: view.bounds.size.width, height: 40)
     }
 
     // MARK: - Image Picker Delegate
@@ -1529,9 +1521,9 @@ extension PVGameLibraryViewController: UITableViewDataSource {
     func tableView(_: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch section {
         case 0:
-            return "Sort By"
+            return "Sort By:"
         case 1:
-            return "View Options"
+            return "Game Library Display Options:"
         default:
             return nil
         }
@@ -1542,7 +1534,11 @@ extension PVGameLibraryViewController: UITableViewDataSource {
     }
 
     func tableView(_: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return section == 0 ? SortOptions.count : 4
+        #if os(tvOS)
+            return section == 0 ? SortOptions.count : 5
+        #else
+            return section == 0 ? SortOptions.count : 4
+        #endif
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -1583,7 +1579,12 @@ extension PVGameLibraryViewController: UITableViewDelegate {
             case 3:
                 cell.textLabel?.text = "Show Game Badges"
                 cell.accessoryType = PVSettingsModel.shared.showGameBadges ? .checkmark : .none
-            default:
+            #if os(tvOS)
+            case 4:
+                cell.textLabel?.text = "Show Large Game Artwork"
+                cell.accessoryType = PVSettingsModel.shared.largeGameArt ? .checkmark : .none
+            #endif            
+	    default:
                 fatalError("Invalid row")
             }
         } else {
@@ -1611,7 +1612,11 @@ extension PVGameLibraryViewController: UITableViewDelegate {
                 showSaveStates.onNext(!PVSettingsModel.shared.showRecentSaveStates)
             case 3:
                 PVSettingsModel.shared.showGameBadges = !PVSettingsModel.shared.showGameBadges
-            default:
+	    #if os(tvOS)
+            case 4:
+                PVSettingsModel.shared.largeGameArt = !PVSettingsModel.shared.largeGameArt
+            #endif            
+	    default:
                 fatalError("Invalid row")
             }
             // dont call reloadRows or we will loose focus on tvOS
@@ -1710,6 +1715,11 @@ extension PVGameLibraryViewController {
 
     override var canBecomeFirstResponder: Bool {
         return true
+    }
+    
+    override func traitCollectionDidChange(_: UITraitCollection?) {
+        self.collectionView?.collectionViewLayout.invalidateLayout()
+        self.collectionView?.reloadData()
     }
 
     #if os(tvOS)

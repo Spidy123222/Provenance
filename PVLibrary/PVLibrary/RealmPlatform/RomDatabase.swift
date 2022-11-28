@@ -9,7 +9,9 @@
 import Foundation
 import PVSupport
 import RealmSwift
+#if canImport(UIKit)
 import UIKit
+#endif
 
 let schemaVersion: UInt64 = 10
 
@@ -375,6 +377,15 @@ public extension RomDatabase {
             }
         }
     }
+    
+    @objc
+    func asyncWriteTransaction(_ block: @escaping () -> Void) {
+        if realm.isPerformingAsynchronousWriteOperations {
+            block()
+        } else {
+            realm.writeAsync(block)
+        }
+    }
 
     @objc
     func add(_ object: Object, update: Bool = false) throws {
@@ -392,6 +403,15 @@ public extension RomDatabase {
     func deleteAll() throws {
         try writeTransaction {
             realm.deleteAll()
+        }
+    }
+    
+    func deleteAllGames() throws {
+        let realm = try! Realm()
+        let allUploadingObjects = realm.objects(PVGame.self)
+
+        try! realm.write {
+            realm.delete(allUploadingObjects)
         }
     }
 
@@ -419,10 +439,10 @@ public extension RomDatabase {
         }
     }
 
-    func delete(game: PVGame) throws {
+    func delete(game: PVGame, deleteArtwork: Bool = false, deleteSaves: Bool = false) throws {
         let romURL = PVEmulatorConfiguration.path(forGame: game)
 
-        if !game.customArtworkURL.isEmpty {
+        if deleteArtwork, !game.customArtworkURL.isEmpty {
             do {
                 try PVMediaCache.deleteImage(forKey: game.customArtworkURL)
             } catch {
@@ -431,21 +451,23 @@ public extension RomDatabase {
             }
         }
 
-        let savesPath = PVEmulatorConfiguration.saveStatePath(forGame: game)
-        if FileManager.default.fileExists(atPath: savesPath.path) {
-            do {
-                try FileManager.default.removeItem(at: savesPath)
-            } catch {
-                ELOG("Unable to delete save states at path: " + savesPath.path + "because: " + error.localizedDescription)
+        if deleteSaves {
+            let savesPath = PVEmulatorConfiguration.saveStatePath(forGame: game)
+            if FileManager.default.fileExists(atPath: savesPath.path) {
+                do {
+                    try FileManager.default.removeItem(at: savesPath)
+                } catch {
+                    ELOG("Unable to delete save states at path: " + savesPath.path + "because: " + error.localizedDescription)
+                }
             }
-        }
 
-        let batteryPath = PVEmulatorConfiguration.batterySavesPath(forGame: game)
-        if FileManager.default.fileExists(atPath: batteryPath.path) {
-            do {
-                try FileManager.default.removeItem(at: batteryPath)
-            } catch {
-                ELOG("Unable to delete battery states at path: \(batteryPath.path) because: \(error.localizedDescription)")
+            let batteryPath = PVEmulatorConfiguration.batterySavesPath(forGame: game)
+            if FileManager.default.fileExists(atPath: batteryPath.path) {
+                do {
+                    try FileManager.default.removeItem(at: batteryPath)
+                } catch {
+                    ELOG("Unable to delete battery states at path: \(batteryPath.path) because: \(error.localizedDescription)")
+                }
             }
         }
 

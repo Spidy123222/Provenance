@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "B30178D2207C901D0051B93D"
-               BuildableName = "libplay-iOS.a"
-               BlueprintName = "play-iOS"
+               BuildableName = "libplay.a"
+               BlueprintName = "play"
                ReferencedContainer = "container:PVPlayCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -51,8 +51,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "B30178D2207C901D0051B93D"
-            BuildableName = "libplay-iOS.a"
-            BlueprintName = "play-iOS"
+            BuildableName = "libplay.a"
+            BlueprintName = "play"
             ReferencedContainer = "container:PVPlayCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

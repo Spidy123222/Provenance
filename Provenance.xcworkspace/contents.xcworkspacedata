@@ -20,13 +20,13 @@
          location = "container:"
          name = "Broken">
          <FileRef
-            location = "group:/Users/jmattiello/Workspace/Provenance/Provenance/Cores/4DO/PV4DO.xcodeproj">
+            location = "group:Cores/4DO/PV4DO.xcodeproj">
          </FileRef>
          <FileRef
-            location = "group:/Users/jmattiello/Workspace/Provenance/Provenance/Cores/Bliss/PVBliss.xcodeproj">
+            location = "group:Cores/Bliss/PVBliss.xcodeproj">
          </FileRef>
          <FileRef
-            location = "group:/Users/jmattiello/Workspace/Provenance/Provenance/Cores/CrabEMU/PVCrabEmu.xcodeproj">
+            location = "group:Cores/CrabEMU/PVCrabEmu.xcodeproj">
          </FileRef>
          <FileRef
             location = "group:Cores/Dolphin/PVDolphin.xcodeproj">
@@ -50,9 +50,6 @@
             location = "group:Cores/snesticle/PVSnesticle.xcodeproj">
          </FileRef>
       </Group>
-      <FileRef
-         location = "group:Cores/4DO/PV4DO.xcodeproj">
-      </FileRef>
       <FileRef
          location = "group:Cores/Atari800/PVAtari800.xcodeproj">
       </FileRef>
@@ -78,7 +75,7 @@
          location = "group:Cores/Mupen64Plus/PVMupen64Plus.xcodeproj">
       </FileRef>
       <FileRef
-         location = "group:/Users/jmattiello/Workspace/Provenance/Provenance/Cores/O2EM/PVO2EM.xcodeproj">
+         location = "group:Cores/O2EM/PVO2EM.xcodeproj">
       </FileRef>
       <FileRef
          location = "group:Cores/PicoDrive/PVPicoDrive.xcodeproj">
@@ -99,7 +96,7 @@
          location = "group:Cores/TGBDual/PVTGBDual.xcodeproj">
       </FileRef>
       <FileRef
-         location = "group:/Users/jmattiello/Workspace/Provenance/Provenance/Cores/VirtualJaguar/PVVirtualJaguar.xcodeproj">
+         location = "group:Cores/VirtualJaguar/PVVirtualJaguar.xcodeproj">
       </FileRef>
    </Group>
    <Group
@@ -131,9 +128,6 @@
          </FileRef>
          <FileRef
             location = "group:Cores/Mupen64Plus-NX/PVMupen64Plus-NX.xcodeproj">
-         </FileRef>
-         <FileRef
-            location = "group:Cores/pcsx_rearmed/PVPCSXRearmed.xcodeproj">
          </FileRef>
          <FileRef
             location = "group:Cores/SameDuck/PVSameDuck.xcodeproj">
@@ -171,6 +165,9 @@
       </FileRef>
       <FileRef
          location = "group:Cores/Mini_vMac/PVMiniVMac.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:Cores/pcsx_rearmed/PVPCSXRearmed.xcodeproj">
       </FileRef>
       <FileRef
          location = "group:Cores/Mu/PVMu.xcodeproj">

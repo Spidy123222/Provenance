@@ -22,6 +22,10 @@
 #import <PVSupport/DebugUtils.h>
 #endif
 
+#if TARGET_OS_OSX
+#import <OpenGL/OpenGL.h>
+#endif
+
 #pragma mark -
 
 typedef void (^SaveStateCompletion)(BOOL, NSError * _Nullable );
@@ -82,8 +86,10 @@ typedef NS_ENUM(NSInteger, PVEmulatorCoreErrorCode) {
 @property (nonatomic, copy, nullable) NSString *BIOSPath;
 @property (nonatomic, copy, nullable) NSString *systemIdentifier;
 @property (nonatomic, copy, nullable) NSString *coreIdentifier;
-@property (nonatomic, copy, nullable) NSString* romMD5;
-@property (nonatomic, copy, nullable) NSString* romSerial;
+@property (nonatomic, copy, nullable) NSString *romMD5;
+@property (nonatomic, copy, nullable) NSString *romSerial;
+@property (nonatomic, copy, nullable) NSString *screenType;
+
 @property (nonatomic, assign) BOOL supportsSaveStates;
 @property (nonatomic, readonly) BOOL supportsRumble;
 

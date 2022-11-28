@@ -377,19 +377,20 @@ class PVControllerViewController<T: ResponderClient> : UIViewController, Control
 		if PVSettingsModel.shared.buttonVibration {
 				// only iPhone 7 and 7 Plus support the taptic engine APIs for now.
 				// everything else should fall back to the vibration motor.
-			if UIDevice.hasTapticMotor {
-				feedbackGenerator?.selectionChanged()
-			} else if UIDevice.current.systemName == "iOS" {
-#if !targetEnvironment(macCatalyst)
-				AudioServicesStopSystemSound(Int32(kSystemSoundID_Vibrate))
-				let vibrationLength: Int = 30
-				let pattern: [Any] = [false, 0, true, vibrationLength]
-				var dictionary = [AnyHashable: Any]()
-				dictionary["VibePattern"] = pattern
-				dictionary["Intensity"] = 1
-				AudioServicesPlaySystemSoundWithVibration(Int32(kSystemSoundID_Vibrate), nil, dictionary)
-#endif
-			}
+            if UIDevice.hasTapticMotor {
+                feedbackGenerator?.selectionChanged()
+            }
+//			} else if UIDevice.current.systemName == "iOS" {
+//#if !targetEnvironment(macCatalyst) && !os(macOS)
+//				AudioServicesStopSystemSound(Int32(kSystemSoundID_Vibrate))
+//				let vibrationLength: Int = 30
+//				let pattern: [Any] = [false, 0, true, vibrationLength]
+//				var dictionary = [AnyHashable: Any]()
+//				dictionary["VibePattern"] = pattern
+//				dictionary["Intensity"] = 1
+//				AudioServicesPlaySystemSoundWithVibration(Int32(kSystemSoundID_Vibrate), nil, dictionary)
+//#endif
+//			}
 		}
 #endif
 	}
@@ -478,7 +479,7 @@ class PVControllerViewController<T: ResponderClient> : UIViewController, Control
         
 		let alpha = self.alpha
 
-		for control in controlLayout {
+        for control in controlLayout {
 				// let controlType = control.PVControlType
 				// let controlSize: CGSize = CGSizeFromString(control.PVControlSize)
 			let controlType: String = control.PVControlType
@@ -499,48 +500,51 @@ class PVControllerViewController<T: ResponderClient> : UIViewController, Control
 				}
 
 				if dPad2 == nil && (control.PVControlTitle == "Y") {
-					let dPad2 = JSDPad(frame: dPadFrame)
-					if let tintColor = control.PVControlTint {
-						dPad2.tintColor = UIColor(hex: tintColor)
-					}
-					self.dPad2 = dPad2
-					dPad2.delegate = self
-					dPad2.alpha = alpha
-					dPad2.autoresizingMask = [.flexibleTopMargin, .flexibleRightMargin]
-					view.addSubview(dPad2)
-				} else if let dPad = dPad {
-					if !dPad.isCustomMoved {
-						dPad.frame = dPadFrame
-					}
-				} else {
-					let dPad = JSDPad(frame: dPadFrame)
-					if let tintColor = control.PVControlTint {
-						dPad.tintColor = UIColor(hex: tintColor)
-					}
-					self.dPad = dPad
-					dPad.delegate = self
-					dPad.alpha = alpha
-					dPad.autoresizingMask = [.flexibleTopMargin, .flexibleRightMargin]
-					view.addSubview(dPad)
-				}
-				if let dPad = dPad {
-					dPad.transform = .identity
-				}
-				if let dPad2 = dPad2 {
-					dPad2.isHidden = compactVertical
-				}
-    
-                    adjustJoystick()
-                } else if controlType == Keys.JoyPad, PVSettingsModel.shared.debugOptions.onscreenJoypad {
-				let xPadding: CGFloat = 0 // safeAreaInsets.left
-				let bottomPadding: CGFloat = 16
-                    let joyPadOriginY: CGFloat = min(controlOriginY - bottomPadding, view.frame.height - controlSize.height - bottomPadding)
-                    var joyPadFrame = CGRect(x: xPadding, y: joyPadOriginY, width: controlSize.width, height: controlSize.height)
-
-                    joyPadFrame.origin.y += joyPadFrame.height + bottomPadding
-
-                    let joyPad: JSDPad = self.joyPad ?? JSDPad.JoyPad(frame: joyPadFrame)
+                    let dPad2 = JSDPad(frame: dPadFrame)
+                    if let tintColor = control.PVControlTint {
+                        dPad2.tintColor = UIColor(hex: tintColor)
+                    }
+                    self.dPad2 = dPad2
+                    dPad2.delegate = self
+                    dPad2.alpha = alpha
+                    dPad2.autoresizingMask = [.flexibleTopMargin, .flexibleRightMargin]
+                    view.addSubview(dPad2)
+                } else if let dPad = dPad {
+                    if !dPad.isCustomMoved {
+                        dPad.frame = dPadFrame
+                    }
+                } else {
+                    let dPad = JSDPad(frame: dPadFrame)
+                    if let tintColor = control.PVControlTint {
+                        dPad.tintColor = UIColor(hex: tintColor)
+                    }
+                    self.dPad = dPad
+                    dPad.delegate = self
+                    dPad.alpha = alpha
+                    dPad.autoresizingMask = [.flexibleTopMargin, .flexibleRightMargin]
+                    view.addSubview(dPad)
+                }
+                if let dPad = dPad {
+                    dPad.transform = .identity
+                }
+                if let dPad2 = dPad2 {
+                    dPad2.isHidden = compactVertical
+                }
+                
+                adjustJoystick()
+            } else if controlType == Keys.JoyPad, PVSettingsModel.shared.debugOptions.onscreenJoypad {
+                let xPadding: CGFloat = 0 // safeAreaInsets.left
+                let bottomPadding: CGFloat = 16
+                let joyPadOriginY: CGFloat = min(controlOriginY - bottomPadding, view.frame.height - controlSize.height - bottomPadding)
+                var joyPadFrame = CGRect(x: xPadding, y: joyPadOriginY, width: controlSize.width, height: controlSize.height)
+                
+                joyPadFrame.origin.y += joyPadFrame.height + bottomPadding
+                
+                let joyPad: JSDPad = self.joyPad ?? JSDPad.JoyPad(frame: joyPadFrame)
+                if !joyPad.isCustomMoved {
                     joyPad.frame = joyPadFrame
+                }
+
 				if let tintColor = control.PVControlTint {
 					joyPad.tintColor = UIColor(hex: tintColor)
 				}
@@ -550,7 +554,7 @@ class PVControllerViewController<T: ResponderClient> : UIViewController, Control
 				joyPad.autoresizingMask = [.flexibleTopMargin, .flexibleRightMargin]
 				view.addSubview(joyPad)
 
-                    adjustJoystick()
+                adjustJoystick()
 			} else if controlType == Keys.ButtonGroup {
 				let xPadding: CGFloat = safeAreaInsets.right + 5
 				let bottomPadding: CGFloat = 16
@@ -897,7 +901,13 @@ class PVControllerViewController<T: ResponderClient> : UIViewController, Control
 								height: controlSize.height)
 
 		if super.view.bounds.size.width > super.view.bounds.size.height || UIDevice.current.orientation.isLandscape || UIDevice.current.userInterfaceIdiom == .pad {
-			if let buttonGroup = buttonGroup {
+            if let selectButton = selectButton {
+                startFrame = CGRect(x: selectButton.frame.maxX + spacing,
+                                    y: selectButton.frame.origin.y,
+                                    width: controlSize.width,
+                                    height: controlSize.height)
+            }
+			else if let buttonGroup = buttonGroup {
 				if buttonGroup.isHidden {
 					startFrame = CGRect(x: view.frame.size.width - controlSize.width - xPadding, y: view.frame.height - yPadding - controlSize.height, width: controlSize.width, height: controlSize.height)
 					if gripControl {
@@ -914,15 +924,17 @@ class PVControllerViewController<T: ResponderClient> : UIViewController, Control
 				}
 			}
 		} else if super.view.bounds.size.width < super.view.bounds.size.height || UIDevice.current.orientation.isPortrait {
-			startFrame = CGRect(x: (view.frame.size.width / 2) + (spacing / 2), y: (buttonGroup?.frame.maxY)! + spacing, width: controlSize.width, height: controlSize.height)
-			if selectButton == nil {
-				startFrame.origin.x -= (spacing / 2) + (controlSize.width / 2)
+			startFrame = CGRect(x: (view.frame.size.width / 2) + (spacing / 2),
+                                y: (buttonGroup?.frame.maxY ?? 0) + spacing,
+                                width: controlSize.width,
+                                height: controlSize.height)
+			if selectButton != nil {
+				startFrame.origin.x += (spacing / 2) + (controlSize.width / 2)
 			}
-
 		}
 
 		if ["PSX", "PS1"].contains(system.shortName.uppercased()) {
-//                startFrame.origin.x += 120
+            startFrame.origin.x += controlSize.width + spacing
 		}
 
 		if startFrame.maxY >= view.frame.size.height {
@@ -1050,9 +1062,28 @@ class PVControllerViewController<T: ResponderClient> : UIViewController, Control
 	}
 
     fileprivate func adjustJoystick() {
-        guard let dPad = dPad, let joyPad = joyPad else {
+        guard  let joyPad = joyPad else {
             return
         }
+        
+//        guard PVSettingsModel.shared.debugOptions.onscreenJoypad else {
+//            DLOG("onscreenJoypad false, hiding")
+//            joyPad.isHidden = true
+//            return
+//        }
+//
+//        if PVControllerManager.shared.isKeyboardConnected && !PVSettingsModel.shared.debugOptions.onscreenJoypadWithKeyboard {
+//            DLOG("`isKeyboardConnected` true and `onscreenJoypadWithKeyboard` false, hiding")
+//            joyPad.isHidden = true
+//            return
+//        }
+//
+//        joyPad.isHidden = false
+        
+        guard let dPad = dPad, !dPad.isCustomMoved, !joyPad.isCustomMoved else {
+            return
+        }
+        
         var joyPadFrame = joyPad.frame
         var dPadFrame = dPad.frame
         

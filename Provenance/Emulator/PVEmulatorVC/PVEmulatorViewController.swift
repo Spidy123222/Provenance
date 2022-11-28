@@ -41,7 +41,7 @@ final class PVEmulatorViewController: PVEmulatorViewControllerRootClass, PVAudio
     var batterySavesPath: URL { return PVEmulatorConfiguration.batterySavesPath(forGame: game) }
     var BIOSPath: URL { return PVEmulatorConfiguration.biosPath(forGame: game) }
     var menuButton: MenuButton?
-
+    
 	let use_metal: Bool = PVSettingsModel.shared.debugOptions.useMetal
     private(set) lazy var gpuViewController: PVGPUViewController = use_metal ? PVMetalViewController(emulatorCore: core) : PVGLViewController(emulatorCore: core)
     private(set) lazy var controllerViewController: (UIViewController & StartSelectDelegate)? = {
@@ -80,6 +80,8 @@ final class PVEmulatorViewController: PVEmulatorViewControllerRootClass, PVAudio
         self.core = core
         self.game = game
 
+        core.screenType = game.system.screenType.rawValue
+        
         super.init(nibName: nil, bundle: nil)
 
         staticSelf = self
@@ -327,7 +329,7 @@ final class PVEmulatorViewController: PVEmulatorViewControllerRootClass, PVAudio
         //			presentingViewController?.presentError("File doesn't exist at path \(romPath.absoluteString)")
         //			return
         //		}
-
+        
         do {
             try core.loadFile(atPath: romPath.path)
         } catch {
@@ -371,7 +373,7 @@ final class PVEmulatorViewController: PVEmulatorViewControllerRootClass, PVAudio
             }
             gpuViewController.didMove(toParent: self)
         }
-        #if os(iOS) && !targetEnvironment(macCatalyst)
+        #if os(iOS) && !targetEnvironment(macCatalyst) && !os(macOS)
             addControllerOverlay()
             initMenuButton()
         #endif
@@ -384,11 +386,12 @@ final class PVEmulatorViewController: PVEmulatorViewControllerRootClass, PVAudio
 
         convertOldSaveStatesToNewIfNeeded()
 
-        core.startEmulation()
-
         gameAudio.volume = PVSettingsModel.shared.volume
         gameAudio.outputDeviceID = 0
         gameAudio.start()
+        
+        core.startEmulation()
+
         #if os(tvOS)
         // On tvOS the siri-remotes menu-button will default to go back in the hierachy (thus dismissing the emulator), we don't want that behaviour
         // (we'd rather pause the game), so we just install a tap-recognizer here (that doesn't do anything), and add our own logic in `setupPauseHandler`
@@ -693,9 +696,7 @@ final class PVEmulatorViewController: PVEmulatorViewControllerRootClass, PVAudio
         #endif
 
         // disable iOS 13 swipe to dismiss...
-        if #available(iOS 13.0, tvOS 13.0, *) {
-            newNav.isModalInPresentation = true
-        }
+        newNav.isModalInPresentation = true
 
         self.present(newNav, animated: true) { () -> Void in }
         // hideMoreInfo will/should do this!
