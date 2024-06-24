@@ -1,0 +1,47 @@
+name: Build and Upload Provenance
+on: 
+  push:
+    branches:
+      - develop
+  pull_request:
+  
+jobs:
+  build:
+    name: Build and upload Provenance
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: 'macos-12'
+            version: '14.0.0'
+    
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: brew install ldid
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1.4.1
+        with:
+          xcode-version: ${{ matrix.version }}
+      - name: Build Provenance
+        run: |
+          rm -rf ~/Library/Developer/Xcode/DerivedData/ 
+          make ./Makefile
+          xcodebuild -project Provenance.xcodeproj -scheme Provenance -sdk iphoneos archive -archivePath ./archive CODE_SIGNING_REQUIRED=NO AD_HOC_CODE_SIGNING_ALLOWED=YES CODE_SIGNING_ALLOWED=NO DEVELOPMENT_TEAM=XYZ0123456 ORG_IDENTIFIER=com.Provenance | xcpretty && exit ${PIPESTATUS[0]}
+      - name: Fakesign app
+        run:  ldid -SProvenance/Resources/tempEnt.plist archive.xcarchive/Products/Applications/Provenance.app/Provenance
+      - name: Convert to IPA
+        run: | 
+          mkdir Payload
+          mkdir Payload/Provenance.app
+          cp -R archive.xcarchive/Products/Applications/Provenance.app/ Payload/Provenance.app/
+          zip -r Provenance.ipa Payload
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Provenance.ipa
+          path: Provenance.ipa
